@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:spacebook/services/api_service.dart';
 
 const Color _green = Color(0xFF3F6B00);
 
 class Slot {
   final String time;
   final String status;
-
   Slot(this.time, this.status);
 }
 
@@ -17,9 +17,15 @@ class ListYourSpacePage extends StatefulWidget {
 }
 
 class _ListYourSpacePageState extends State<ListYourSpacePage> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _seatsController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController(text: "500");
+  final TextEditingController _imageUrlController = TextEditingController();
 
-  final TextEditingController priceController =
-        TextEditingController(text: "500");
+  String _selectedSpaceType = "Select Space Type";
+  bool _isLoading = false;
 
   final Map<String, bool> facilities = {
     "Wi-Fi": false,
@@ -43,33 +49,90 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
 
   Set<String> selectedSlots = {};
 
+  // Map dropdown value to database category
+  String _getCategoryValue(String type) {
+    switch (type) {
+      case "Turf": return "Sports Turfs";
+      case "Library": return "Libraries";
+      case "Study Halls": return "Study Halls";
+      case "Event Halls": return "Event Halls";
+      default: return type;
+    }
+  }
+
+  Future<void> _handleDone() async {
+    // Validate required fields
+    if (_nameController.text.trim().isEmpty) {
+      _showError('Please enter a space name');
+      return;
+    }
+    if (_selectedSpaceType == "Select Space Type") {
+      _showError('Please select a space type');
+      return;
+    }
+    if (_locationController.text.trim().isEmpty) {
+      _showError('Please enter a location/address');
+      return;
+    }
+    if (_priceController.text.trim().isEmpty) {
+      _showError('Please enter a price');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await ApiService.createSpace(
+        title: _nameController.text.trim(),
+        category: _getCategoryValue(_selectedSpaceType),
+        area: _locationController.text.trim(),
+        description: _descriptionController.text.trim(),
+        pricePerHr: int.tryParse(_priceController.text.trim()) ?? 500,
+        hasSeats: _seatsController.text.trim().isNotEmpty,
+      );
+
+      if (result['id'] != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Space listed successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      } else {
+        _showError(result['error'] ?? 'Failed to list space. Try again.');
+      }
+    } catch (e) {
+      _showError('Connection error. Is the backend running?');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.red),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           "List Your Space",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
         ),
       ),
-
       body: Column(
         children: [
-
-          /// SCROLLABLE CONTENT
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
@@ -77,13 +140,16 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
 
+                  // Space Name
                   const Text("Space Name",
                       style: TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
-                  _buildTextField("e.g. Downtown Sports Arena"),
+                  _buildTextField("e.g. Downtown Sports Arena",
+                      controller: _nameController),
 
                   const SizedBox(height: 20),
 
+                  // Space Type
                   const Text("Space Type",
                       style: TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
@@ -91,25 +157,26 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
 
                   const SizedBox(height: 20),
 
-                  const Text("Enter the number of seats(optional)",
+                  // Seats
+                  const Text("Enter the number of seats (optional)",
                       style: TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
-                  _buildTextField("e.g. 100"),
+                  _buildTextField("e.g. 100",
+                      controller: _seatsController,
+                      keyboardType: TextInputType.number),
 
                   const SizedBox(height: 20),
 
-                  /// Time Slots
+                  // Time Slots
                   const Text("Available Slots",
-                      style:
-                          TextStyle(fontWeight: FontWeight.w600)),
-
+                      style: TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
-
                   GridView.builder(
                     shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
+                    physics: const NeverScrollableScrollPhysics(),
                     itemCount: timeSlots.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
@@ -118,21 +185,6 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
                     itemBuilder: (context, index) {
                       final slot = timeSlots[index];
                       final isSelected = selectedSlots.contains(slot.time);
-
-                      Color bgColor;
-                      Color textColor;
-                      Border? border;
-
-                      if (isSelected) {
-                        bgColor = _green;
-                        textColor = Colors.white;
-                        border = null;
-                      } else {
-                        bgColor = Colors.white;
-                        textColor = Colors.black;
-                        border = Border.all(color: _green, width: 2);
-                      }
-
                       return GestureDetector(
                         onTap: () {
                           setState(() {
@@ -146,9 +198,9 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
                         child: Container(
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: bgColor,
+                            color: isSelected ? _green : Colors.white,
                             borderRadius: BorderRadius.circular(12),
-                            border: border,
+                            border: Border.all(color: _green, width: 2),
                             boxShadow: isSelected
                                 ? [
                                     BoxShadow(
@@ -162,11 +214,8 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
                           child: Text(
                             slot.time,
                             style: TextStyle(
-                              color: textColor,
+                              color: isSelected ? Colors.white : Colors.black,
                               fontWeight: FontWeight.w600,
-                              decoration: slot.status == "booked"
-                                  ? TextDecoration.lineThrough
-                                  : TextDecoration.none,
                             ),
                           ),
                         ),
@@ -176,13 +225,16 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
 
                   const SizedBox(height: 20),
 
+                  // Location
                   const Text("Location/Address",
                       style: TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
-                  _buildTextField("Enter full address"),
+                  _buildTextField("e.g. MG Road, Bangalore",
+                      controller: _locationController),
 
                   const SizedBox(height: 20),
 
+                  // Map placeholder
                   Container(
                     height: 180,
                     decoration: BoxDecoration(
@@ -191,17 +243,26 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
                       color: Colors.grey.shade200,
                     ),
                     child: const Center(
-                      child: Icon(Icons.map, size: 50, color: Colors.grey),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.map, size: 50, color: Colors.grey),
+                          SizedBox(height: 8),
+                          Text("Map view",
+                              style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
                     ),
                   ),
 
                   const SizedBox(height: 20),
 
+                  // Price
                   const Text("Pricing per Hour (INR)",
                       style: TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   TextField(
-                    controller: priceController,
+                    controller: _priceController,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
                       prefixText: "₹ ",
@@ -212,11 +273,11 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
                         borderSide: BorderSide.none,
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: _green, width: 2),
+                        borderSide: const BorderSide(color: _green, width: 2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: _green, width: 2),
+                        borderSide: const BorderSide(color: _green, width: 2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
@@ -224,12 +285,11 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
 
                   const SizedBox(height: 30),
 
+                  // Facilities
                   const Text("Facilities",
                       style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600)),
+                          fontSize: 18, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 10),
-
                   ...facilities.keys.map((facility) {
                     return CheckboxListTile(
                       contentPadding: EdgeInsets.zero,
@@ -237,42 +297,58 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
                       value: facilities[facility],
                       activeColor: _green,
                       onChanged: (value) {
-                        setState(() {
-                          facilities[facility] = value!;
-                        });
+                        setState(() => facilities[facility] = value!);
                       },
                     );
                   }),
 
                   const SizedBox(height: 20),
 
-                  /// Upload Photos
-                  const Text("Upload Photos",
+                  // Image URL input (replaces file upload for web)
+                  const Text("Space Image URL",
                       style: TextStyle(fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 10),
-
-                  Row(
-                    children: [
-                      _photoBox(isAdd: true),
-                      const SizedBox(width: 12),
-                      _photoBox(),
-                      const SizedBox(width: 12),
-                      _photoBox(),
-                    ],
+                  const SizedBox(height: 4),
+                  const Text(
+                    "Paste an image URL from unsplash.com or any image link",
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
+                  const SizedBox(height: 8),
+                  _buildTextField(
+                    "https://images.unsplash.com/...",
+                    controller: _imageUrlController,
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Image preview
+                  if (_imageUrlController.text.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        _imageUrlController.text,
+                        height: 150,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 80,
+                          color: Colors.grey[200],
+                          child: const Center(
+                              child: Text("Invalid image URL",
+                                  style: TextStyle(color: Colors.grey))),
+                        ),
+                      ),
+                    ),
 
                   const SizedBox(height: 20),
 
-                  /// Description
+                  // Description
                   const Text("Description",
                       style: TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
-
                   TextField(
+                    controller: _descriptionController,
                     maxLines: 4,
                     decoration: InputDecoration(
-                      hintText:
-                          "Tell guests what makes your space unique...",
+                      hintText: "Tell guests what makes your space unique...",
                       filled: true,
                       fillColor: Colors.grey.shade100,
                       border: OutlineInputBorder(
@@ -280,22 +356,23 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
                         borderSide: BorderSide.none,
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: _green, width: 2),
+                        borderSide: const BorderSide(color: _green, width: 2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: _green, width: 2),
+                        borderSide: const BorderSide(color: _green, width: 2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 100), // space for bottom buttons
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
           ),
 
+          // Bottom buttons
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -311,41 +388,34 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {},
+                    onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       side: const BorderSide(color: _green, width: 2),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                          borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text(
-                      "Save Draft"
-                      , style: TextStyle(fontWeight: FontWeight.w600, color: _green)
-                    )
+                    child: const Text("Save Draft",
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, color: _green)),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                     onPressed: () async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Space listed successfully!')));
-    Navigator.pop(context);
-  },
+                    onPressed: _isLoading ? null : _handleDone,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _green,
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                          borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text(
-                      "Done",
-                      style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
-                      ),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("Done",
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white)),
                   ),
                 ),
               ],
@@ -356,8 +426,13 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
     );
   }
 
-  Widget _buildTextField(String hint) {
+  Widget _buildTextField(String hint,
+      {TextEditingController? controller,
+      TextInputType keyboardType = TextInputType.text}) {
     return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      onChanged: (_) => setState(() {}), // for image preview refresh
       decoration: InputDecoration(
         hintText: hint,
         filled: true,
@@ -367,63 +442,45 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: _green, width: 2),
+          borderSide: const BorderSide(color: _green, width: 2),
           borderRadius: BorderRadius.circular(12),
         ),
         enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: _green, width: 2),
+          borderSide: const BorderSide(color: _green, width: 2),
           borderRadius: BorderRadius.circular(12),
-        )
+        ),
       ),
     );
   }
 
   Widget _buildDropdown() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 0),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          border: Border.all(color: _green, width: 2),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: DropdownButtonHideUnderline(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: DropdownButton<String>(
-              isExpanded: true,
-              value: "Select Space Type",
-              items: const [
-                DropdownMenuItem(
-                  value: "Select Space Type",
-                  child: Text("Select Space Type"),
-                ),
-                DropdownMenuItem(value: "Turf", child: Text("Turf")),
-                DropdownMenuItem(value: "Library", child: Text("Library")),
-                DropdownMenuItem(value: "Study Halls", child: Text("Study Halls")),
-                DropdownMenuItem(value: "Event Halls", child: Text("Event Halls")),
-              ],
-              onChanged: (value) {},
-            ),
-          ),
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        border: Border.all(color: _green, width: 2),
+        borderRadius: BorderRadius.circular(12),
       ),
-    );
-  }
-
-  Widget _photoBox({bool isAdd = false}) {
-    return Expanded(
-      child: Container(
-        height: 100,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade200,
-          border: Border.all(color: _green, width: 2),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Center(
-          child: Icon(
-            isAdd ? Icons.add : Icons.image,
-            size: 30,
+      child: DropdownButtonHideUnderline(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: DropdownButton<String>(
+            isExpanded: true,
+            value: _selectedSpaceType,
+            items: const [
+              DropdownMenuItem(
+                  value: "Select Space Type",
+                  child: Text("Select Space Type")),
+              DropdownMenuItem(value: "Turf", child: Text("Turf")),
+              DropdownMenuItem(
+                  value: "Library", child: Text("Library")),
+              DropdownMenuItem(
+                  value: "Study Halls", child: Text("Study Halls")),
+              DropdownMenuItem(
+                  value: "Event Halls", child: Text("Event Halls")),
+            ],
+            onChanged: (value) {
+              setState(() => _selectedSpaceType = value!);
+            },
           ),
         ),
       ),

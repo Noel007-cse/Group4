@@ -88,6 +88,7 @@ class ApiService {
     required String description,
     required int pricePerHr,
     required bool hasSeats,
+    String imageUrl = '',
   }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/spaces'),
@@ -99,6 +100,7 @@ class ApiService {
         'description': description,
         'price_per_hr': pricePerHr,
         'has_seats': hasSeats,
+        'image_url': imageUrl,
       }),
     );
     return jsonDecode(res.body);
@@ -112,7 +114,8 @@ class ApiService {
     return jsonDecode(res.body);
   }
 
-  static Future<Map<String, dynamic>> updateSpacePrice(int spaceId, int newPrice) async {
+  static Future<Map<String, dynamic>> updateSpacePrice(
+      int spaceId, int newPrice) async {
     final res = await http.put(
       Uri.parse('$baseUrl/spaces/$spaceId'),
       headers: _authHeaders,
