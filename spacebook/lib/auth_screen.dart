@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'services/api_service.dart';
+import 'main_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({Key? key}) : super(key: key);
+
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -12,6 +15,9 @@ class _AuthScreenState extends State<AuthScreen> {
   String accountType = "Buyer (I want to book spaces)";
 
   final greenColor = const Color(0xFF3D7F1E);
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -135,12 +141,12 @@ class _AuthScreenState extends State<AuthScreen> {
       children: [
         const Text("Email Address"),
         const SizedBox(height: 5),
-        inputField("Enter email"),
+        inputField("Enter email", controller: _emailController),
 
         const SizedBox(height: 15),
         const Text("Password"),
         const SizedBox(height: 5),
-        inputField("Enter password", obscure: true),
+        inputField("Enter password", obscure: true, controller: _passwordController),
 
         const SizedBox(height: 20),
         primaryButton("Login"),
@@ -159,17 +165,17 @@ class _AuthScreenState extends State<AuthScreen> {
       children: [
         const Text("Full Name"),
         const SizedBox(height: 5),
-        inputField("Enter full name"),
+        inputField("Enter full name", controller: _nameController),
 
         const SizedBox(height: 15),
         const Text("Email Address"),
         const SizedBox(height: 5),
-        inputField("Enter email"),
+        inputField("Enter email", controller: _emailController),
 
         const SizedBox(height: 15),
         const Text("Password"),
         const SizedBox(height: 5),
-        inputField("Enter password", obscure: true),
+        inputField("Enter password", obscure: true, controller: _passwordController),
 
         const SizedBox(height: 15),
         const Text("Account Type"),
@@ -225,12 +231,13 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  Widget inputField(String hint, {bool obscure = false}) {
-    return TextField(
-      obscureText: obscure,
-      decoration: inputDecoration(hint),
-    );
-  }
+  Widget inputField(String hint, {bool obscure = false, TextEditingController? controller}) {
+  return TextField(
+    controller: controller,
+    obscureText: obscure,
+    decoration: inputDecoration(hint),
+  );
+}
 
   InputDecoration inputDecoration([String hint = ""]) {
     return InputDecoration(
@@ -246,22 +253,54 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  Widget primaryButton(String text) {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: greenColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+ Widget primaryButton(String text) {
+  return SizedBox(
+    width: double.infinity,
+    height: 50,
+    child: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: greenColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
-        onPressed: () {},
-        child: Text(text),
       ),
-    );
-  }
+      onPressed: () async {
+        try {
+          if (isLogin) {
+            final result = await ApiService.login(
+              _emailController.text.trim(),
+              _passwordController.text.trim(),
+            );
+            if (result['token'] != null) {
+              Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (_) => const MainScreen()));
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(result['error'] ?? 'Login failed')));
+            }
+          } else {
+            final result = await ApiService.register(
+              _nameController.text.trim(),
+              _emailController.text.trim(),
+              _passwordController.text.trim(),
+            );
+            if (result['token'] != null) {
+              Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (_) => const MainScreen()));
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(result['error'] ?? 'Registration failed')));
+            }
+          }
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Connection error. Is the backend running?')));
+        }
+      },
+      child: Text(text),
+    ),
+  );
+}
 
   Widget socialButtons() {
     return Row(

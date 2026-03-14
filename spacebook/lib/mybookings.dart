@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:spacebook/data/booking_data.dart';
 import 'package:spacebook/models/booking_frame_model.dart';
 import 'package:spacebook/widgets/booking_tip_widget.dart';
+import 'package:spacebook/services/api_service.dart';
 
 const Color _green = Color(0xFF3F6B00);
 
@@ -76,8 +77,8 @@ class _MyBookingsPageState extends State<MyBookingsPage>
       body: TabBarView(
         controller: _tabController,
         children: const [
-          _BookingsList(bookings: upcomingBookings, isUpcoming: true),
-          _BookingsList(bookings: completedBookings, isUpcoming: false),
+          _BookingsList( isUpcoming: true),
+          _BookingsList( isUpcoming: false),
         ],
       ),
     );
@@ -85,35 +86,67 @@ class _MyBookingsPageState extends State<MyBookingsPage>
 }
 
 // ─── Bookings List ─────────────────────────────────────────────────────────────
-
-class _BookingsList extends StatelessWidget {
-  final List<BookingModel> bookings;
+class _BookingsList extends StatefulWidget {
   final bool isUpcoming;
+  const _BookingsList({required this.isUpcoming});
 
-  const _BookingsList({
-    required this.bookings,
-    required this.isUpcoming,
-  });
+  @override
+  State<_BookingsList> createState() => _BookingsListState();
+}
+
+class _BookingsListState extends State<_BookingsList> {
+  List<BookingModel> _bookings = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBookings();
+  }
+
+  Future<void> _loadBookings() async {
+    try {
+      final data = await ApiService.getMyBookings();
+      final filtered = data.where((b) => widget.isUpcoming
+          ? b['status'] == 'CONFIRMED'
+          : b['status'] == 'COMPLETED').toList();
+
+      setState(() {
+        _bookings = filtered.map((b) => BookingModel(
+          id: b['id'].toString(),
+          title: b['title'] ?? '',
+          date: b['booking_date'] ?? '',
+          price: '₹${b['total_price'] ?? 0}',
+          imageUrl: b['image_url'] ?? '',
+          status: b['status'] ?? '',
+        )).toList();
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: _green));
+    }
+    if (_bookings.isEmpty) {
+      return const Center(child: Text('No bookings found'));
+    }
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ...bookings.map(
-            (b) => _BookingCard(booking: b, isUpcoming: isUpcoming),
-          ),
+          ..._bookings.map((b) => _BookingCard(booking: b, isUpcoming: widget.isUpcoming)),
           const SizedBox(height: 4),
           const NearbyTipCard(),
-          const SizedBox(height: 16),
         ],
       ),
     );
   }
 }
-
 // ─── Booking Card ──────────────────────────────────────────────────────────────
 
 class _BookingCard extends StatelessWidget {

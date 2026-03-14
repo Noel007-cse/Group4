@@ -329,7 +329,11 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {},
+                     onPressed: () async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Space listed successfully!')));
+    Navigator.pop(context);
+  },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _green,
                       padding:

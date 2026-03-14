@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spacebook/models/space_frame_model.dart';
+import 'package:spacebook/services/api_service.dart';
 
 const Color _green = Color(0xFF3F6B00);
 
@@ -510,7 +511,24 @@ class _SpaceFrameWidgetState extends State<SpaceFrameWidget> {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              onPressed: () {},
+             onPressed: () async {
+  try {
+    final result = await ApiService.createBooking(
+      spaceId: widget.space.id,
+      bookingDate: DateTime.now().toIso8601String().split('T')[0],
+      timeSlot: selectedTime,
+      totalPrice: widget.space.pricePerHr,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(
+        result['id'] != null ? 'Booking confirmed!' : result['error'] ?? 'Booking failed'
+      )),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please login first to book')));
+  }
+},
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

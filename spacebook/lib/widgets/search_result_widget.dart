@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:spacebook/models/space_frame_model.dart';
 import 'package:spacebook/data/category_result_data.dart';
 import 'package:spacebook/widgets/spaces_card_widget.dart';
+import 'package:spacebook/services/api_service.dart';
 
 enum SortType { nearest, priceLow, ratingHigh }
 
@@ -26,8 +27,32 @@ class _SearchResultPageState extends State<SearchResultPage> {
   @override
   void initState() {
     super.initState();
-    _spaces = List.from(getSpacesForCategory(widget.categoryTitle));
+    _loadSpaces();
+    // _spaces = List.from(getSpacesForCategory(widget.categoryTitle));
   }
+  Future<void> _loadSpaces() async {
+  try {
+    final data = await ApiService.getSpaces(category: widget.categoryTitle);
+    setState(() {
+      _spaces = data.map((json) => SpaceFrameModel(
+        id: json['id'] ?? 0,
+        title: json['title'] ?? '',
+        area: json['area'] ?? '',
+        description: json['description'] ?? '',
+        distance: (json['distance'] ?? 0).toString(),
+        distanceKm: (json['distance'] ?? 0).toDouble(),
+        pricePerHr: json['price_per_hr'] ?? 0,
+        rating: double.tryParse(json['rating'].toString()) ?? 0.0,
+        noOfRating: 0,
+        imageUrl: json['image_url'] ?? '',
+        isFavorite: false,
+        hasSeats: json['has_seats'] ?? false,
+      )).toList();
+    });
+  } catch (e) {
+    debugPrint('Error: $e');
+  }
+}
 
   void _applySort(SortType type) {
     setState(() {
