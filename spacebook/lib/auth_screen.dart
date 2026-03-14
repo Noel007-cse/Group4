@@ -27,14 +27,9 @@ class _AuthScreenState extends State<AuthScreen> {
         children: [
           // Background Image
           Container(
-            height: 320,
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage("assets/bg.jpg"), // Add your image
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
+  height: 320,
+  color: const Color(0xFF2D6A0A),
+),
 
           // Green overlay
           Container(
