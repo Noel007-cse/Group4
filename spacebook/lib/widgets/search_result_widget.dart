@@ -37,6 +37,7 @@ class _SearchResultPageState extends State<SearchResultPage> {
       final loaded = data.map((json) => SpaceFrameModel(
         id: json['id'] ?? 0,
         title: json['title'] ?? '',
+        category: json['category'] ?? '',
         area: json['area'] ?? '',
         description: json['description'] ?? '',
         distance: (json['distance'] ?? 0).toString(),

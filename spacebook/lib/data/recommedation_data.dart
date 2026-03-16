@@ -4,6 +4,7 @@ const List<SpaceFrameModel> allRecommended = [
   SpaceFrameModel(
     id: 1,
     title: 'Premier Arena Soccer Turf',
+    category: 'Sports Turfs',
     area: 'Downtown District, Playville',
     description: 'Modern synthetic turfs designed for football and cricket, featuring floodlights, secure fencing, and well-maintained playing surfaces.',
     distance: '2.4',
@@ -18,6 +19,7 @@ const List<SpaceFrameModel> allRecommended = [
   SpaceFrameModel(
     id: 2,
     title: 'Focus Hub Study Library',
+    category: 'Libraries',
     area: 'Central Business District, Education City',
     description: 'Spacious and quiet study halls with modern amenities, including high-speed internet, comfortable seating, and private study rooms.',
     distance: '0.8',
@@ -32,6 +34,7 @@ const List<SpaceFrameModel> allRecommended = [
   SpaceFrameModel(
     id: 3,
     title: 'The Grand Ballroom',
+    category: 'Event Halls',
     area: 'Historic District, Entertainment City',
     description: 'Elegant ballroom with high ceilings, ornate decorations, and premium sound systems, perfect for grand events and celebrations.',
     distance: '5.1',

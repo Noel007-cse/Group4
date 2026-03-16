@@ -473,9 +473,47 @@ class _FavoritesSectionState extends State<_FavoritesSection> {
 
 // ─── Recommended Section ───────────────────────────────────────────────────────
 
-class _RecommendedSection extends StatelessWidget {
-  final List<SpaceFrameModel> spaces = allRecommended;
+class _RecommendedSection extends StatefulWidget {
+  @override
+  State<_RecommendedSection> createState() => _RecommendedSectionState();
+}
 
+class _RecommendedSectionState extends State<_RecommendedSection> {
+  List<SpaceFrameModel> _spaces = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecommended();
+  }
+
+  Future<void> _loadRecommended() async {
+    try {
+      final data = await ApiService.getRecommend();
+      setState(() {
+        _spaces = data.map((d) => SpaceFrameModel(
+          id: d['id'] ?? 0,
+          title: d['title'] ?? '',
+          category: d['category'] ?? '',
+          area: d['area'] ?? '',
+          distance: d['distance'] ?? '0.0',
+          distanceKm: d['distance_km'] ?? 0.0,
+          rating: d['rating'] ?? 0.0,
+          noOfRating: d['no_of_rating'] ?? 0.0,
+          description: d['description'] ?? '',
+          pricePerHr: d['price_per_hr'] ?? 0,
+          hasSeats: d['has_seats'] ?? false,
+          isFavorite: d['is_favorite'] ?? false,
+          imageUrl: d['image_url'] ?? '',
+        )).toList();
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -498,7 +536,7 @@ class _RecommendedSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 14),
-        ...spaces.map((space) => SpacesCardWidget(space: space)),
+        ..._spaces.map((space) => SpacesCardWidget(space: space)),
       ],
     );
   }

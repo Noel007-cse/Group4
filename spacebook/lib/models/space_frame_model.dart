@@ -1,6 +1,7 @@
 class SpaceFrameModel {
   final int id;
   final String title;
+  final String category;
   final String area;
   final String description;
   final String distance; // e.g. "0.5"
@@ -15,6 +16,7 @@ class SpaceFrameModel {
   const SpaceFrameModel({
     required this.id,
     required this.title,
+    required this.category,
     required this.area,
     required this.description,
     required this.distance,

@@ -141,6 +141,16 @@ class ApiService {
     throw Exception('Failed to load spaces');
   }
 
+  static Future<List<dynamic>> getRecommend() async {
+    final url = '$baseUrl/recom';
+    final res = await http.get(
+      Uri.parse(url),
+      headers: _authHeaders
+      );
+    if (res.statusCode == 200) return jsonDecode(res.body);
+    throw Exception('Failed to load spaces');
+  }
+
   static Future<List<dynamic>> getMySpaces() async {
     final res = await http.get(
       Uri.parse('$baseUrl/spaces/mine'),

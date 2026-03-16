@@ -4,6 +4,7 @@ const List<SpaceFrameModel> allTurfs = [
   SpaceFrameModel(
     id: 1,
     title: 'Olympic Green Arena',
+    category: 'Sports Turfs',
     distance: '0.5',
     area: 'Sports District, Playville',
     description: 'Modern synthetic turfs designed for football and cricket, featuring floodlights, secure fencing, and well-maintained playing surfaces.',
@@ -18,6 +19,7 @@ const List<SpaceFrameModel> allTurfs = [
   SpaceFrameModel(
     id: 2,
     title: 'Stellar Multi-Sports Park',
+    category: 'Sports Turfs',
     distance: '1.2',
     area: 'Sports District, Playville',
     description: 'Multi-purpose sports facility with multiple courts and fields, offering a variety of sports activities and recreational options.',
@@ -32,6 +34,7 @@ const List<SpaceFrameModel> allTurfs = [
   SpaceFrameModel(
     id: 3,
     title: "Champion's Court Indoor",
+    category: 'Sports Turfs',
     distance: '2.4',
     area: 'Playville Suburbs',
     description: 'Indoor court with premium flooring and climate control, perfect for basketball and volleyball.',
@@ -46,6 +49,7 @@ const List<SpaceFrameModel> allTurfs = [
   SpaceFrameModel(
     id: 4,
     title: 'Green Kick Football Arena',
+    category: 'Sports Turfs',
     distance: '3.1',
     area: 'Playville Suburbs',
     description: 'Well-maintained football arena with proper lighting and secure fencing.',
@@ -60,6 +64,7 @@ const List<SpaceFrameModel> allTurfs = [
   SpaceFrameModel(
     id: 5,
     title: 'Elite Sports Ground',
+    category: 'Sports Turfs',
     distance: '4.0',
     area: 'Playville Suburbs',
     description: 'Premium sports ground with excellent facilities and maintenance.',
@@ -77,6 +82,7 @@ const List<SpaceFrameModel> allLibraries = [
   SpaceFrameModel(
     id: 101,
     title: 'City Central Library',
+    category: 'Libraries',
     distance: '0.3',
     area: 'Central Business District, Education City',
     description: 'Spacious and quiet library with modern amenities, including high-speed internet, comfortable seating, and private study rooms.',
@@ -91,6 +97,7 @@ const List<SpaceFrameModel> allLibraries = [
   SpaceFrameModel(
     id: 102,
     title: 'Knowledge Oasis Study Hall',
+    category: 'Libraries',
     distance: '0.9',
     area: 'Education City',
     description: 'Modern study hall with comfortable seating, high-speed internet, and private study rooms.',
@@ -105,6 +112,7 @@ const List<SpaceFrameModel> allLibraries = [
   SpaceFrameModel(
     id: 103,
     title: 'The Reading Room',
+    category: 'Libraries',
     distance: '1.5',
     area: 'Education City',
     description: 'Cozy and quiet reading room with a vast collection of books and comfortable seating.',
@@ -122,6 +130,7 @@ const List<SpaceFrameModel> allStudyHalls = [
   SpaceFrameModel(
     id: 201,
     title: 'Focus Study Hub',
+    category: 'Study Halls',
     distance: '0.8',
     area: 'Education City',
     description: 'Spacious and quiet study hub with modern amenities, including high-speed internet, comfortable seating, and private study rooms.',
@@ -136,6 +145,7 @@ const List<SpaceFrameModel> allStudyHalls = [
   SpaceFrameModel(
     id: 202,
     title: 'Skyline Study Lounge',
+    category: 'Study Halls',
     distance: '1.2',
     area: 'Education City',
     description: 'Modern study lounge with comfortable seating, high-speed internet, and a relaxing atmosphere.',
@@ -150,6 +160,7 @@ const List<SpaceFrameModel> allStudyHalls = [
   SpaceFrameModel(
     id: 203,
     title: 'Quiet Corner Study Space',
+    category: 'Study Halls',
     distance: '2.0',
     area: 'Education City',
     description: 'Quiet and comfortable study space with minimal distractions.',
@@ -167,6 +178,7 @@ const List<SpaceFrameModel> allEventHalls = [
   SpaceFrameModel(
     id: 301,
     title: 'The Grand Ballroom',
+    category: 'Event Halls',
     distance: '5.1',
     area: 'Historic District, Entertainment City',
     description: 'Elegant ballroom with high ceilings, ornate decorations, and premium sound systems, perfect for grand events and celebrations.',
@@ -181,6 +193,7 @@ const List<SpaceFrameModel> allEventHalls = [
   SpaceFrameModel(
     id: 302,
     title: 'Prestige Event Centre',
+    category: 'Event Halls',
     distance: '3.4',
     area: 'Entertainment City',
     description: 'Modern event centre with premium facilities and flexible layouts.',
@@ -195,6 +208,7 @@ const List<SpaceFrameModel> allEventHalls = [
   SpaceFrameModel(
     id: 303,
     title: 'Royal Banquet Hall',
+    category: 'Event Halls',
     distance: '6.2',
     area: 'Entertainment City',
     description: 'Elegant banquet hall with premium facilities and a grand atmosphere.',
