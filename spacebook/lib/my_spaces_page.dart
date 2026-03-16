@@ -11,26 +11,38 @@ class MySpacesPage extends StatefulWidget {
   State<MySpacesPage> createState() => _MySpacesPageState();
 }
 
-class _MySpacesPageState extends State<MySpacesPage> {
-  List<dynamic> _spaces = [];
+class _MySpacesPageState extends State<MySpacesPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  List<dynamic> _mySpaces = [];
+  List<dynamic> _receivedBookings = [];
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadMySpaces();
+    _tabController = TabController(length: 2, vsync: this);
+    _loadData();
   }
 
-  Future<void> _loadMySpaces() async {
+  Future<void> _loadData() async {
     try {
-      final data = await ApiService.getMySpaces();
+      final spaces = await ApiService.getMySpaces();
+      final bookings = await ApiService.getBookingsForMySpaces();
       setState(() {
-        _spaces = data;
+        _mySpaces = spaces;
+        _receivedBookings = bookings;
         _loading = false;
       });
     } catch (e) {
       setState(() => _loading = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -49,69 +61,91 @@ class _MySpacesPageState extends State<MySpacesPage> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add, color: _green),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ListYourSpacePage()),
+            ).then((_) => _loadData()),
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(46),
+          child: Container(
+            color: Colors.white,
+            child: TabBar(
+              controller: _tabController,
+              labelColor: Colors.black87,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: _green,
+              indicatorWeight: 2.5,
+              labelStyle: const TextStyle(
+                  fontWeight: FontWeight.bold, fontSize: 14),
+              tabs: const [
+                Tab(text: 'My Listings'),
+                Tab(text: 'Bookings Received'),
+              ],
+            ),
+          ),
+        ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: _green))
-          : _spaces.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.store_outlined, size: 64, color: Colors.grey[300]),
-                      const SizedBox(height: 16),
-                      const Text('No spaces listed yet',
-                          style: TextStyle(color: Colors.grey, fontSize: 16)),
-                      const SizedBox(height: 8),
-                      const Text('Tap + Add Space to list your first space',
-                          style: TextStyle(color: Colors.grey, fontSize: 13)),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadMySpaces,
-                  color: _green,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                    child: Column(
-                      children: _spaces
-                          .map((space) => _MySpacesCard(
-                                space: space,
-                                onRefresh: _loadMySpaces,
-                              ))
-                          .toList(),
-                    ),
-                  ),
-                ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: _green,
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ListYourSpacePage()),
-          );
-          _loadMySpaces(); // refresh after returning
-        },
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text("Add Space", style: TextStyle(color: Colors.white)),
-      ),
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _MyListingsTab(spaces: _mySpaces, onRefresh: _loadData),
+                _BookingsReceivedTab(bookings: _receivedBookings),
+              ],
+            ),
     );
   }
 }
 
-class _MySpacesCard extends StatelessWidget {
-  final dynamic space;
+// ── My Listings Tab ────────────────────────────────────────────────────────────
+
+class _MyListingsTab extends StatelessWidget {
+  final List<dynamic> spaces;
   final VoidCallback onRefresh;
 
-  const _MySpacesCard({required this.space, required this.onRefresh});
+  const _MyListingsTab({required this.spaces, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = space['image_url'] ?? '';
-    final title = space['title'] ?? 'Untitled';
-    final price = space['price_per_hr'] ?? 0;
-    final status = space['is_active'] == true ? 'ACTIVE' : 'INACTIVE';
+    if (spaces.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.store_outlined, size: 60, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            const Text('No spaces listed yet',
+                style: TextStyle(fontSize: 16, color: Colors.grey)),
+            const SizedBox(height: 8),
+            const Text('Tap + to add your first space',
+                style: TextStyle(fontSize: 13, color: Colors.grey)),
+          ],
+        ),
+      );
+    }
 
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: spaces.length,
+      itemBuilder: (_, i) => _SpaceCard(space: spaces[i], onRefresh: onRefresh),
+    );
+  }
+}
+
+class _SpaceCard extends StatelessWidget {
+  final dynamic space;
+  final VoidCallback onRefresh;
+
+  const _SpaceCard({required this.space, required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -128,74 +162,125 @@ class _MySpacesCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(14)),
-                child: imageUrl.isNotEmpty
-                    ? Image.network(
-                        imageUrl,
-                        height: 170,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _imagePlaceholder(),
-                      )
-                    : _imagePlaceholder(),
+          // Image
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            child: Image.network(
+              space['image_url'] ?? '',
+              height: 150,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                height: 150,
+                color: Colors.grey[200],
+                child: const Icon(Icons.image, size: 40, color: Colors.grey),
               ),
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _green,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    status,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        space['title'] ?? '',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'ACTIVE',
+                        style: const TextStyle(
+                          color: _green,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
+                Text(
+                  space['area'] ?? '',
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+                const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '₹$price/hr',
+                      '₹${space['price_per_hr']}/hr',
                       style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: _green,
                       ),
                     ),
-                    _ActionButtons(
-                      spaceId: space['id'],
-                      title: title,
-                      currentPrice: price,
-                      onRefresh: onRefresh,
+                    Text(
+                      space['category'] ?? '',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                // Delete button
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text('Remove Listing'),
+                          content: const Text(
+                              'Are you sure you want to remove this space?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.pop(context, true),
+                              child: const Text('Remove',
+                                  style: TextStyle(color: Colors.red)),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm == true) {
+                        await ApiService.deleteSpace(space['id']);
+                        onRefresh();
+                      }
+                    },
+                    icon: const Icon(Icons.delete_outline,
+                        color: Colors.red, size: 18),
+                    label: const Text('Remove Listing',
+                        style: TextStyle(color: Colors.red)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.red),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -204,175 +289,139 @@ class _MySpacesCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _imagePlaceholder() {
-    return Container(
-      height: 170,
-      color: Colors.grey[200],
-      child: const Icon(Icons.image, size: 50, color: Colors.grey),
+// ── Bookings Received Tab ──────────────────────────────────────────────────────
+
+class _BookingsReceivedTab extends StatelessWidget {
+  final List<dynamic> bookings;
+
+  const _BookingsReceivedTab({required this.bookings});
+
+  @override
+  Widget build(BuildContext context) {
+    if (bookings.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.calendar_today_outlined,
+                size: 60, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            const Text('No bookings yet',
+                style: TextStyle(fontSize: 16, color: Colors.grey)),
+            const SizedBox(height: 8),
+            const Text('Bookings for your spaces will appear here',
+                style: TextStyle(fontSize: 13, color: Colors.grey)),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: bookings.length,
+      itemBuilder: (_, i) => _BookingReceivedCard(booking: bookings[i]),
     );
   }
 }
 
-class _ActionButtons extends StatelessWidget {
-  final int spaceId;
-  final String title;
-  final int currentPrice;
-  final VoidCallback onRefresh;
+class _BookingReceivedCard extends StatelessWidget {
+  final dynamic booking;
 
-  const _ActionButtons({
-    required this.spaceId,
-    required this.title,
-    required this.currentPrice,
-    required this.onRefresh,
-  });
+  const _BookingReceivedCard({required this.booking});
+
+  Color get _statusColor {
+    switch (booking['status']) {
+      case 'CONFIRMED': return Colors.green;
+      case 'CANCELLED': return Colors.red;
+      case 'COMPLETED': return Colors.grey;
+      default: return Colors.orange;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        GestureDetector(
-          onTap: () => _showDeleteDialog(context),
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFEBEB),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.delete_forever_outlined,
-                color: Colors.red, size: 20),
-          ),
-        ),
-        const SizedBox(width: 10),
-        ElevatedButton(
-          onPressed: () => _showChangePriceDialog(context),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _green,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8)),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          ),
-          child: const Text('Change Price',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-        ),
-      ],
-    );
-  }
-
-  void _showDeleteDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text("Delete Space?",
-            style: TextStyle(fontWeight: FontWeight.w600)),
-        content: Text('Are you sure you want to delete "$title"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel",
-                style: TextStyle(color: _green, fontWeight: FontWeight.w600)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                final res = await http_delete(spaceId);
-                if (res['message'] != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Space deleted')));
-                  onRefresh();
-                }
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Failed to delete')));
-              }
-            },
-            child: const Text("Delete",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-    );
-  }
-
-  Future<Map<String, dynamic>> http_delete(int id) async {
-    final res = await ApiService.deleteSpace(id);
-    return res;
-  }
-
-  void _showChangePriceDialog(BuildContext context) {
-    final controller =
-        TextEditingController(text: currentPrice.toString());
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text("Change Price",
-            style: TextStyle(fontWeight: FontWeight.w600)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                prefixText: '₹ ',
-                labelText: 'New Price per hour',
-                labelStyle: const TextStyle(color: _green),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: _green, width: 2),
-                  borderRadius: BorderRadius.circular(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  booking['space_title'] ?? booking['title'] ?? '',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12)),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel",
-                style: TextStyle(color: _green, fontWeight: FontWeight.w600)),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  booking['status'] ?? '',
+                  style: TextStyle(
+                    color: _statusColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _green,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+          const SizedBox(height: 10),
+          // Booked by
+          Row(
+            children: [
+              const Icon(Icons.person_outline, size: 14, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text(
+                'Booked by: ${booking['user_name'] ?? 'User'}',
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.calendar_today_outlined,
+                  size: 14, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text(
+                '${booking['booking_date'] ?? ''} | ${booking['time_slot'] ?? ''}',
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '₹${booking['total_price'] ?? 0}',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: _green,
             ),
-            onPressed: () async {
-              final newPrice = int.tryParse(controller.text);
-              if (newPrice == null || newPrice <= 0) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Enter a valid price')));
-                return;
-              }
-              Navigator.pop(context);
-              try {
-                await ApiService.updateSpacePrice(spaceId, newPrice);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Price updated!')));
-                onRefresh();
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Failed to update price')));
-              }
-            },
-            child: const Text("Update",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
           ),
         ],
       ),

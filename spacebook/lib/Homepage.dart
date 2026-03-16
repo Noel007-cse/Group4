@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:spacebook/services/api_service.dart';
 import 'package:spacebook/data/recommedation_data.dart';
 import 'package:spacebook/list_your_space_page.dart';
 import 'package:spacebook/main.dart';
@@ -292,13 +293,19 @@ class _HostBanner extends StatelessWidget {
               const SizedBox(height: 18),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ListYourSpacePage(),
-                    ),
-                  );
-                },
+  if (!ApiService.isOwner) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Create an Owner account to list your space.'),
+      ),
+    );
+    return;
+  }
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => ListYourSpacePage()),
+  );
+},
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: _green,
