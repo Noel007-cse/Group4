@@ -29,23 +29,38 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
   }
 
   Future<void> _handleSave() async {
-    setState(() => _isLoading = true);
-    try {
-      // Update local currentUser immediately so other screens reflect change
-      ApiService.currentUser?['name'] = nameController.text.trim();
-      ApiService.currentUser?['email'] = emailController.text.trim();
+  setState(() => _isLoading = true);
 
+  try {
+    final res = await ApiService.updateProfile(
+      nameController.text.trim(),
+    );
+
+    if (res['user'] != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Profile updated successfully!'),
           backgroundColor: Colors.green,
         ),
       );
+
       Navigator.pop(context);
-    } finally {
-      setState(() => _isLoading = false);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to update profile'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: $e')),
+    );
   }
+
+  setState(() => _isLoading = false);
+}
 
   @override
   Widget build(BuildContext context) {

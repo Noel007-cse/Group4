@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:spacebook/models/space_frame_model.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:5000/api';
+  static const String baseUrl = 'http://10.0.2.2:5000/api';
   static String? _token;
   static Map<String, dynamic>? currentUser;
 
@@ -85,6 +85,23 @@ class ApiService {
       }),
     );
     return jsonDecode(res.body);
+  }
+
+  static Future<Map<String, dynamic>> updateProfile(String name) async{
+    final res = await http.put(
+      Uri.parse('$baseUrl/auth/profile'),
+      headers: _authHeaders,
+      body: jsonEncode({
+        'name':name,
+      }),
+    );
+
+    final data = jsonDecode(res.body);
+
+    if(res.statusCode==200){
+      currentUser=data['user'];
+    }
+    return data;
   }
 
   // ── Cloudinary Upload ──
