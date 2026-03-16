@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'package:spacebook/Homepage.dart';
 import 'package:spacebook/widgets/search_result_widget.dart';
 import 'package:spacebook/auth_screen.dart';
@@ -7,7 +9,11 @@ import 'package:spacebook/mybookings.dart';
 import 'package:spacebook/widgets/space_frame_widget.dart';
 import 'package:spacebook/splash.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const SpaceBookApp());
 }
 
