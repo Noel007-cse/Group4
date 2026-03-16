@@ -31,20 +31,25 @@ class ApiService {
 
   // ── Auth ──
   static Future<Map<String, dynamic>> register(
-      String name, String email, String password) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/auth/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name, 'email': email, 'password': password}),
-    );
-    final data = jsonDecode(res.body);
-    if (data['token'] != null) {
-      setToken(data['token']);
-      currentUser = data['user'];
-    }
-    return data;
+    String name, String email, String password,
+    {String accountType = 'buyer'}) async {
+  final res = await http.post(
+    Uri.parse('$baseUrl/auth/register'),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'name': name,
+      'email': email,
+      'password': password,
+      'account_type': accountType,
+    }),
+  );
+  final data = jsonDecode(res.body);
+  if (data['token'] != null) {
+    setToken(data['token']);
+    currentUser = data['user'];
   }
-
+  return data;
+}
   static Future<Map<String, dynamic>> login(
       String email, String password) async {
     final res = await http.post(

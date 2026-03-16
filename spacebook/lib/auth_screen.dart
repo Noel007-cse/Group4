@@ -361,6 +361,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       _nameController.text.trim(),
                       _emailController.text.trim(),
                       _passwordController.text.trim(),
+                      accountType: accountType == "Seller (I want to offer spaces)" ? 'seller' : 'buyer',
                     );
                     if (result['token'] != null) {
                       Navigator.pushReplacement(
