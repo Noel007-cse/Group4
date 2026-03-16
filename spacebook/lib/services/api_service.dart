@@ -28,7 +28,7 @@ class ApiService {
     'Content-Type': 'application/json',
     if (_token != null) 'Authorization': 'Bearer $_token',
   };
-
+static bool get isOwner => currentUser?['account_type'] == 'seller';
   // ── Auth ──
   static Future<Map<String, dynamic>> register(
     String name, String email, String password,
