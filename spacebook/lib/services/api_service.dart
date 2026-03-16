@@ -28,28 +28,31 @@ class ApiService {
     'Content-Type': 'application/json',
     if (_token != null) 'Authorization': 'Bearer $_token',
   };
-static bool get isOwner => currentUser?['account_type'] == 'seller';
+
+  static bool get isOwner => currentUser?['account_type'] == 'seller';
+
   // ── Auth ──
   static Future<Map<String, dynamic>> register(
     String name, String email, String password,
     {String accountType = 'buyer'}) async {
-  final res = await http.post(
-    Uri.parse('$baseUrl/auth/register'),
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({
-      'name': name,
-      'email': email,
-      'password': password,
-      'account_type': accountType,
-    }),
-  );
-  final data = jsonDecode(res.body);
-  if (data['token'] != null) {
-    setToken(data['token']);
-    currentUser = data['user'];
+    final res = await http.post(
+      Uri.parse('$baseUrl/auth/register'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': name,
+        'email': email,
+        'password': password,
+        'account_type': accountType,
+      }),
+    );
+    final data = jsonDecode(res.body);
+    if (data['token'] != null) {
+      setToken(data['token']);
+      currentUser = data['user'];
+    }
+    return data;
   }
-  return data;
-}
+
   static Future<Map<String, dynamic>> login(
       String email, String password) async {
     final res = await http.post(
@@ -200,5 +203,15 @@ static bool get isOwner => currentUser?['account_type'] == 'seller';
     );
     if (res.statusCode == 200) return jsonDecode(res.body);
     throw Exception('Failed to load bookings');
+  }
+
+  // ← NEW: get all bookings made on owner's spaces
+  static Future<List<dynamic>> getBookingsForMySpaces() async {
+    final res = await http.get(
+      Uri.parse('$baseUrl/bookings/for-my-spaces'),
+      headers: _authHeaders,
+    );
+    if (res.statusCode == 200) return jsonDecode(res.body);
+    throw Exception('Failed to load bookings for spaces');
   }
 }
