@@ -106,7 +106,7 @@ class _BookingsListState extends State<_BookingsList> {
     try {
       final data = await ApiService.getMyBookings();
       final filtered = data.where((b) => widget.isUpcoming
-          ? b['status'] == 'CONFIRMED'
+          ? b['status'] == 'FUNCTIONAL'
           : b['status'] == 'COMPLETED').toList();
 
       setState(() {
@@ -116,7 +116,7 @@ class _BookingsListState extends State<_BookingsList> {
           date: b['booking_date'] ?? '',
           price: '₹${b['total_price'] ?? 0}',
           imageUrl: b['image_url'] ?? '',
-          status: b['status'] ?? '',
+          status: (b['is_confirmed'] ?? false) ? 'CONFIRMED' : 'UNCONFIRMED',
         )).toList();
         _loading = false;
       });
@@ -200,7 +200,7 @@ class _BookingCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
+                    color: booking.status == 'CONFIRMED' ? Theme.of(context).colorScheme.primary : Colors.orange,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(

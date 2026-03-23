@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spacebook/list_your_space_page.dart';
 import 'package:spacebook/services/api_service.dart';
-import 'package:provider/provider.dart';
-import 'package:spacebook/providers/space_provider.dart';
 
 class MySpacesPage extends StatefulWidget {
   const MySpacesPage({super.key});
@@ -269,12 +267,7 @@ class _SpaceCard extends StatelessWidget {
 
                       if (confirm == true) {
                         await ApiService.deleteSpace(space['id']);
-                       Provider.of<SpaceProvider>(context, listen: false)
-    .removeSpace(space['id']);
-
-// refresh page
-onRefresh();
-                       
+                        onRefresh();
                       }
                     },
                     icon: const Icon(Icons.delete_outline, size: 20, color: Colors.white,),
@@ -308,6 +301,7 @@ class _BookingsReceivedTab extends StatefulWidget {
 class _BookingsReceivedTabState extends State<_BookingsReceivedTab> {
   List<dynamic> _bookings = [];
   bool _loading = true;
+
   @override
   void initState() {
     super.initState();
@@ -317,13 +311,11 @@ class _BookingsReceivedTabState extends State<_BookingsReceivedTab> {
   Future<void> _loadBookings() async {
     try {
       final bookings = await ApiService.getBookingsForMySpaces();
-
       setState(() {
         _bookings = bookings;
         _loading = false;
       });
     } catch (e) {
-      print("ERROR: $e");
       setState(() => _loading = false);
     }
   }
@@ -331,48 +323,68 @@ class _BookingsReceivedTabState extends State<_BookingsReceivedTab> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary));
+      return Center(
+          child: CircularProgressIndicator(
+              color: Theme.of(context).colorScheme.primary));
     }
     if (_bookings.isEmpty) {
       return const Center(child: Text('No bookings yet'));
-    }    
+    }
     return RefreshIndicator(
       onRefresh: _loadBookings,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _bookings.length,
-        itemBuilder: (_, i) =>
-            _BookingReceivedCard(booking: _bookings[i]),
+        itemBuilder: (_, i) => _BookingReceivedCard(
+          booking: _bookings[i],
+          onRefresh: () => _loadBookings(),
+        ),
       ),
     );
   }
 }
 
-class _BookingReceivedCard extends StatelessWidget {
+class _BookingReceivedCard extends StatefulWidget {
   final dynamic booking;
+  final VoidCallback onRefresh;
 
-  const _BookingReceivedCard({required this.booking});
+  const _BookingReceivedCard({required this.booking, required this.onRefresh});
 
-  Color get _statusColor {
-    switch (booking['status']) {
-      case 'CONFIRMED': return Colors.green;
-      case 'CANCELLED': return Colors.red;
-      case 'COMPLETED': return Colors.grey;
-      default: return Colors.orange;
+  @override
+  State<_BookingReceivedCard> createState() => _BookingReceivedCardState();
+}
+
+class _BookingReceivedCardState extends State<_BookingReceivedCard> {
+  bool _toggling = false;
+
+  Future<void> _handleToggle() async {
+    setState(() => _toggling = true);
+    try {
+      await ApiService.toggleBookingConfirmation(widget.booking['id']);
+      widget.onRefresh();
+    } catch (e) {
+      print('Toggle error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update confirmation.')),
+      );
+    } finally {
+      setState(() => _toggling = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool isConfirmed = widget.booking['is_confirmed'] ?? false;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Theme.of(context).shadowColor.withOpacity(0.08),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -381,30 +393,31 @@ class _BookingReceivedCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Title + confirmation badge
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Text(
-                  booking['space_title'] ?? booking['title'] ?? '',
-                  style: const TextStyle(
+                  widget.booking['title'] ?? '',
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Theme.of(context).textTheme.titleLarge?.color,
                   ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _statusColor.withOpacity(0.1),
+                  color: (isConfirmed ? Theme.of(context).colorScheme.primary : Colors.orange).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  booking['status'] ?? '',
+                  isConfirmed ? 'CONFIRMED' : 'PENDING',
                   style: TextStyle(
-                    color: _statusColor,
+                    color: isConfirmed ? Theme.of(context).colorScheme.primary : Colors.orange,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
@@ -419,30 +432,74 @@ class _BookingReceivedCard extends StatelessWidget {
               const Icon(Icons.person_outline, size: 14, color: Colors.grey),
               const SizedBox(width: 4),
               Text(
-                'Booked by: ${booking['user_name'] ?? 'User'}',
+                'Booked by: ${widget.booking['booker_name'] ?? 'User'}',
                 style: const TextStyle(fontSize: 13, color: Colors.grey),
               ),
             ],
           ),
           const SizedBox(height: 4),
+          // Email
+          Row(
+            children: [
+              const Icon(Icons.email_outlined, size: 14, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text(
+                widget.booking['booker_email'] ?? '',
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          // Date + time slot
           Row(
             children: [
               const Icon(Icons.calendar_today_outlined,
                   size: 14, color: Colors.grey),
               const SizedBox(width: 4),
               Text(
-                '${booking['booking_date'] ?? ''} | ${booking['time_slot'] ?? ''}',
+                '${widget.booking['booking_date'] ?? ''} | ${widget.booking['time_slot'] ?? ''}',
                 style: const TextStyle(fontSize: 13, color: Colors.grey),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            '₹${booking['total_price'] ?? 0}',
+            '₹${widget.booking['total_price'] ?? 0}',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Confirm toggle button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _toggling ? null : _handleToggle,
+              icon: _toggling
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : Icon(
+                      isConfirmed ? Icons.cancel_outlined : Icons.check_circle_outline,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+              label: Text(
+                isConfirmed ? 'Unconfirm Booking' : 'Confirm Booking',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isConfirmed ? Colors.orange : Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
             ),
           ),
         ],

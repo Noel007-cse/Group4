@@ -2,9 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:spacebook/models/space_frame_model.dart';
 
-
 class ApiService {
-  static bool shouldRefreshHome = false;
   static const String baseUrl = 'http://127.0.0.1:5000/api';
   static String? _token;
   static Map<String, dynamic>? currentUser;
@@ -285,14 +283,23 @@ class ApiService {
     if (res.statusCode == 200) return jsonDecode(res.body);
     throw Exception('Failed to load bookings');
   }
-
-  // ← NEW: get all bookings made on owner's spaces
   static Future<List<dynamic>> getBookingsForMySpaces() async {
     final res = await http.get(
-      Uri.parse('$baseUrl/bookings/for-my-spaces'),
+      Uri.parse('$baseUrl/bookings/my-spaces'),
       headers: _authHeaders,
     );
     if (res.statusCode == 200) return jsonDecode(res.body);
     throw Exception('Failed to load bookings for spaces');
+  }
+
+  static Future<Map<String, dynamic>> toggleBookingConfirmation(int bookingId) async {
+    final res = await http.patch(
+      Uri.parse('$baseUrl/bookings/$bookingId/confirm-toggle'),
+      headers: _authHeaders,
+    );
+    print('Toggle status: ${res.statusCode}');
+    print('Toggle body: ${res.body}');
+    if (res.statusCode == 200) return jsonDecode(res.body);
+    throw Exception('Failed to toggle booking confirmation');
   }
 }
