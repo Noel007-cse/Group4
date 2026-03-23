@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:spacebook/models/space_frame_model.dart';
 import 'package:spacebook/services/api_service.dart';
+import 'package:spacebook/map_page.dart';
+const Color _green = Color(0xFF3F6B00);
 
 class Slot {
   final String time;
@@ -181,8 +183,41 @@ class _SpaceFrameWidgetState extends State<SpaceFrameWidget> {
                       style: const TextStyle(
                           fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  Text(space.area,
-                      style: const TextStyle(color: Colors.grey)),
+                  GestureDetector(
+  onTap: () => Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => MapPage(locationName: space.area),
+    ),
+  ),
+  child: Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: const Color(0xFFE8F5E9),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: _green.withOpacity(0.3)),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.location_on_outlined, color: _green, size: 14),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            space.area,
+            style: const TextStyle(
+              color: _green,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        const Icon(Icons.map_outlined, color: _green, size: 13),
+      ],
+    ),
+  ),
+),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
