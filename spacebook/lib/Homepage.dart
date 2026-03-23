@@ -11,6 +11,8 @@ import 'package:spacebook/widgets/spaces_card_widget.dart';
 import 'package:spacebook/widgets/search_result_widget.dart';
 import 'package:spacebook/widgets/space_frame_widget.dart';
 import 'data/category_item_data.dart';
+import 'package:spacebook/map_page.dart';
+const Color _green = Color(0xFF3F6B00);
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -515,11 +517,34 @@ class _RecommendedSection extends StatelessWidget {
                   color: Theme.of(context).textTheme.bodyLarge?.color,
                 ),
             ),
-            Text(
-              'View map',
-              style: TextStyle(
-                  fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600),
-            ),
+            GestureDetector(
+  onTap: () async {
+    // Load all spaces then show map
+    try {
+      final spaces = await ApiService.getSpaces();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MapPage(
+            locationName: 'All Spaces',
+            allSpaces: List<Map<String, dynamic>>.from(spaces),
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not load spaces')));
+    }
+  },
+  child: Text(
+    'View map',
+    style: TextStyle(
+      fontSize: 13,
+      color: _green,
+      fontWeight: FontWeight.w600,
+    ),
+  ),
+),
           ],
         ),
         const SizedBox(height: 14),

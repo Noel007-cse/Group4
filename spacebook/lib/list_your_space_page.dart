@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:spacebook/services/api_service.dart';
+import 'package:spacebook/map_page.dart';
 
 class Slot {
   final String time;
@@ -277,25 +278,55 @@ class _ListYourSpacePageState extends State<ListYourSpacePage> {
 
                   const SizedBox(height: 20),
 
-                  Container(
-                    height: 150,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Theme.of(context).colorScheme.primary, width: 2),
-                      color: Theme.of(context).colorScheme.secondaryContainer,
-                    ),
-                    child: const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.map, size: 40, color: Colors.grey),
-                          SizedBox(height: 6),
-                          Text("Map view",
-                              style: TextStyle(color: Colors.grey)),
-                        ],
-                      ),
-                    ),
-                  ),
+                 GestureDetector(
+  onTap: () {
+    if (_locationController.text.trim().isEmpty) {
+      _showError('Enter a location above first');
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapPage(
+          locationName: _locationController.text.trim(),
+        ),
+      ),
+    );
+  },
+  child: Container(
+    height: 150,
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: Theme.of(context).colorScheme.primary, width: 2),
+      color: Theme.of(context).colorScheme.secondaryContainer,
+    ),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.map, size: 40,
+            color: Theme.of(context).colorScheme.primary),
+        const SizedBox(height: 8),
+        Text(
+          _locationController.text.isEmpty
+              ? "Tap to preview location on map"
+              : "Tap to view: ${_locationController.text}",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          "Powered by OpenStreetMap",
+          style: TextStyle(color: Colors.grey, fontSize: 11),
+        ),
+      ],
+    ),
+  ),
+),
 
                   const SizedBox(height: 20),
 
