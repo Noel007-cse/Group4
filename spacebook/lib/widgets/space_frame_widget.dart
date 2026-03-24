@@ -128,37 +128,51 @@ class _SpaceFrameWidgetState extends State<SpaceFrameWidget> {
                     child: const Icon(Icons.image, size: 60, color: Colors.grey),
                   ),
                 ),
-               Positioned(
-  top: 50,
-  right: 16,
-  child: Row(
-    children: [
-      _circleButton(
-        icon: Icons.delete,
-        color: Colors.red,
-        onTap: () async {
-          await ApiService.deleteSpace(widget.space.id);
+                Positioned(
+                  top: 50,
+                  left: 16,
+                  child: _circleButton(
+                    icon: Icons.arrow_back,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    onTap: () => Navigator.pop(context),
+                  ),
+                ),
+                Positioned(
+                  top: 50,
+                  right: 16,
+                  child: Row(
+                    children: [
+                      // _circleButton(
+                      //   icon: Icons.delete,
+                      //   color: Colors.red,
+                      //   onTap: () async {
+                      //     await ApiService.deleteSpace(widget.space.id);
 
-          // 🔥 THIS IS THE FIX
-          if (mounted) {
-            Navigator.pop(context); // go back after delete
-          }
-        },
-      ),
+                      //     // 🔥 THIS IS THE FIX
+                      //     if (mounted) {
+                      //       Navigator.pop(context); // go back after delete
+                      //     }
+                      //   },
+                      // ),
+                      _circleButton(
+                          icon: Icons.share,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          onTap: () {}
+                        ),
 
-      const SizedBox(width: 10),
+                      const SizedBox(width: 10),
 
-      _circleButton(
-        icon: _isFav ? Icons.favorite : Icons.favorite_border,
-        color: _isFav ? Colors.red : Theme.of(context).colorScheme.onPrimaryContainer,
-        onTap: () async {
-          final newState = await ApiService.toggleFavorite(widget.space.id, _isFav);
-          setState(() => _isFav = newState);
-        },
-      ),
-    ],
-  ),
-),
+                      _circleButton(
+                        icon: _isFav ? Icons.favorite : Icons.favorite_border,
+                        color: _isFav ? Colors.red : Theme.of(context).colorScheme.onPrimaryContainer,
+                        onTap: () async {
+                          final newState = await ApiService.toggleFavorite(widget.space.id, _isFav);
+                          setState(() => _isFav = newState);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
 
